@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>✈️ Travel Planner Agent — IBM Granite</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3250;
+      --accent: #3b82f6;
+      --accent2: #8b5cf6;
+      --green: #22c55e;
+      --yellow: #eab308;
+      --red: #ef4444;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --radius: 12px;
+    }
+
+    body {
+      font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    header {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    header .logo { font-size: 28px; }
+    header h1 { font-size: 20px; font-weight: 700; color: var(--text); }
+    header p { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    header .badge {
+      margin-left: auto;
+      background: #1e3a5f;
+      border: 1px solid #3b82f6;
+      color: #93c5fd;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    /* Layout */
+    .main-layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+      height: calc(100vh - 73px);
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 280px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      gap: 8px;
+      overflow-y: auto;
+    }
+    .sidebar h3 {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      padding: 8px 0 4px;
+    }
+    .quick-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      text-align: left;
+      font-size: 13px;
+      transition: border-color 0.15s, background 0.15s;
+      line-height: 1.4;
+    }
+    .quick-btn:hover {
+      border-color: var(--accent);
+      background: #1a2744;
+    }
+    .quick-btn .icon { margin-right: 8px; }
+
+    /* Chat area */
+    .chat-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .message { display: flex; gap: 12px; max-width: 900px; width: 100%; }
+    .message.user { flex-direction: row-reverse; margin-left: auto; }
+
+    .avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+    .avatar.agent-av { background: #1e3a5f; border: 1px solid var(--accent); }
+    .avatar.user-av  { background: #2d1b69; border: 1px solid var(--accent2); }
+
+    .bubble {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      font-size: 14px;
+      line-height: 1.6;
+      flex: 1;
+    }
+    .message.user .bubble {
+      background: #1e293b;
+      border-color: var(--accent2);
+    }
+
+    /* Result cards */
+    .card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-top: 12px;
+    }
+    .card-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+    .card-title .icon { margin-right: 6px; }
+
+    .dest-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px;
+    }
+    .dest-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+    }
+    .dest-card h4 { font-size: 15px; color: var(--accent); }
+    .dest-card .country { font-size: 12px; color: var(--muted); }
+    .dest-card .cost { font-size: 13px; color: var(--green); font-weight: 600; margin: 6px 0; }
+    .dest-card .why { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+    .day-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 8px;
+    }
+    .day-card h4 { font-size: 14px; color: var(--yellow); margin-bottom: 8px; }
+    .day-slot { font-size: 13px; color: var(--muted); padding: 4px 0; }
+    .day-slot strong { color: var(--text); }
+
+    .weather-block { font-size: 13px; line-height: 1.8; white-space: pre-wrap; }
+
+    .transport-card, .accom-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 8px;
+    }
+    .transport-card h4, .accom-card h4 { font-size: 15px; color: var(--accent); }
+    .tag {
+      display: inline-block;
+      background: #1e3a5f;
+      color: #93c5fd;
+      border-radius: 4px;
+      padding: 2px 7px;
+      font-size: 11px;
+      margin-right: 4px;
+    }
+
+    .typing {
+      display: flex; gap: 6px; align-items: center;
+      padding: 4px 0;
+    }
+    .typing span {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: bounce 1s infinite;
+    }
+    .typing span:nth-child(2) { animation-delay: 0.2s; }
+    .typing span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes bounce {
+      0%, 80%, 100% { transform: translateY(0); opacity: 0.5; }
+      40% { transform: translateY(-6px); opacity: 1; }
+    }
+
+    /* Input area */
+    .input-area {
+      padding: 16px 24px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+    }
+    .input-area textarea {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      padding: 12px 16px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: none;
+      min-height: 48px;
+      max-height: 120px;
+      outline: none;
+      transition: border-color 0.15s;
+      line-height: 1.5;
+    }
+    .input-area textarea:focus { border-color: var(--accent); }
+    .input-area textarea::placeholder { color: var(--muted); }
+
+    .send-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+      height: 48px;
+    }
+    .send-btn:hover { background: #2563eb; }
+    .send-btn:disabled { background: #334155; cursor: not-allowed; }
+
+    .error-msg { color: var(--red); font-size: 13px; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">✈️</div>
+  <div>
+    <h1>Travel Planner Agent</h1>
+    <p>AI-powered trip planning assistant</p>
+  </div>
+  <div class="badge">IBM Granite · watsonx.ai</div>
+</header>
+
+<div class="main-layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <h3>Quick Prompts</h3>
+    <button class="quick-btn" data-prompt="Suggest me 5 destinations for a beach holiday with a $2000 budget for 7 days">
+      <span class="icon">🌴</span>Beach holiday destinations
+    </button>
+    <button class="quick-btn" data-prompt="Plan a complete 7-day trip to Japan from New York with a $3000 budget">
+      <span class="icon">🗾</span>7-day Japan trip plan
+    </button>
+    <button class="quick-btn" data-prompt="What's the weather like in Paris for the next 5 days?">
+      <span class="icon">🌤</span>Paris weather forecast
+    </button>
+    <button class="quick-btn" data-prompt="Create a 5-day itinerary for Barcelona for a couple interested in food and architecture">
+      <span class="icon">📅</span>Barcelona itinerary
+    </button>
+    <button class="quick-btn" data-prompt="How can I travel from London to Rome? Show me all options with costs">
+      <span class="icon">🚄</span>London → Rome transport
+    </button>
+    <button class="quick-btn" data-prompt="Find hotels in Kyoto for $80 per night, city center, with breakfast included">
+      <span class="icon">🏨</span>Kyoto hotel options
+    </button>
+    <button class="quick-btn" data-prompt="Give me insider travel tips and local guide for visiting Tokyo as a solo traveler">
+      <span class="icon">🗺</span>Tokyo local guide
+    </button>
+    <button class="quick-btn" data-prompt="Plan a luxury 10-day Europe trip from Dubai, budget $10000, interested in art and fine dining">
+      <span class="icon">💎</span>Luxury Europe tour
+    </button>
+
+    <h3>Actions</h3>
+    <button class="quick-btn" id="reset-btn">
+      <span class="icon">🔄</span>Reset conversation
+    </button>
+  </aside>
+
+  <!-- Chat -->
+  <div class="chat-area">
+    <div class="messages" id="messages">
+      <div class="message">
+        <div class="avatar agent-av">🤖</div>
+        <div class="bubble">
+          <strong>Hello! I'm your AI Travel Planner</strong>, powered by <strong>IBM Granite</strong> on IBM watsonx.ai.<br/><br/>
+          I can help you with:
+          <ul style="margin: 10px 0 0 18px; line-height: 2">
+            <li>🌍 Suggesting destinations based on your preferences & budget</li>
+            <li>📅 Building detailed day-by-day itineraries</li>
+            <li>🌤 Real-time weather forecasts for any city</li>
+            <li>🚀 Transport options (flights, trains, buses)</li>
+            <li>🏨 Accommodation recommendations</li>
+            <li>🗺 Local guides, food tips, and cultural etiquette</li>
+          </ul>
+          <br/>Just tell me where you want to go — or ask anything travel-related!
+        </div>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <textarea id="input" placeholder="Ask me anything — 'Plan a 7-day trip to Japan with $3000...' or 'Weather in Paris?'" rows="1"></textarea>
+      <button class="send-btn" id="send-btn">Send ✈️</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const messagesEl = document.getElementById('messages');
+  const inputEl = document.getElementById('input');
+  const sendBtn = document.getElementById('send-btn');
+
+  // Quick prompt buttons
+  document.querySelectorAll('.quick-btn[data-prompt]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      inputEl.value = btn.dataset.prompt;
+      inputEl.focus();
+    });
+  });
+
+  // Reset
+  document.getElementById('reset-btn').addEventListener('click', async () => {
+    await fetch('/api/reset', { method: 'POST' });
+    messagesEl.innerHTML = '';
+    appendAgentMessage({ answer: 'Conversation reset. How can I help you plan your next adventure?' }, 'general_question');
+  });
+
+  // Auto-resize textarea
+  inputEl.addEventListener('input', () => {
+    inputEl.style.height = 'auto';
+    inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
+  });
+
+  // Send on Enter (Shift+Enter for newline)
+  inputEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  });
+  sendBtn.addEventListener('click', sendMessage);
+
+  async function sendMessage() {
+    const text = inputEl.value.trim();
+    if (!text) return;
+
+    appendUserMessage(text);
+    inputEl.value = '';
+    inputEl.style.height = 'auto';
+    sendBtn.disabled = true;
+
+    const typingId = appendTyping();
+
+    try {
+      const resp = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text })
+      });
+      const data = await resp.json();
+      removeTyping(typingId);
+      appendAgentMessage(data, data.intent_detected || 'general_question');
+    } catch (err) {
+      removeTyping(typingId);
+      appendError('Could not reach the agent. Is the server running?');
+    }
+    sendBtn.disabled = false;
+  }
+
+  function appendUserMessage(text) {
+    const div = document.createElement('div');
+    div.className = 'message user';
+    div.innerHTML = `
+      <div class="avatar user-av">🧑</div>
+      <div class="bubble">${escHtml(text)}</div>
+    `;
+    messagesEl.appendChild(div);
+    scrollBottom();
+  }
+
+  function appendTyping() {
+    const id = 'typing-' + Date.now();
+    const div = document.createElement('div');
+    div.className = 'message';
+    div.id = id;
+    div.innerHTML = `
+      <div class="avatar agent-av">🤖</div>
+      <div class="bubble"><div class="typing"><span></span><span></span><span></span></div></div>
+    `;
+    messagesEl.appendChild(div);
+    scrollBottom();
+    return id;
+  }
+
+  function removeTyping(id) {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+  }
+
+  function appendError(msg) {
+    const div = document.createElement('div');
+    div.className = 'message';
+    div.innerHTML = `
+      <div class="avatar agent-av">🤖</div>
+      <div class="bubble"><span class="error-msg">⚠️ ${escHtml(msg)}</span></div>
+    `;
+    messagesEl.appendChild(div);
+    scrollBottom();
+  }
+
+  function appendAgentMessage(data, intent) {
+    const div = document.createElement('div');
+    div.className = 'message';
+    div.innerHTML = `<div class="avatar agent-av">🤖</div><div class="bubble">${buildContent(data, intent)}</div>`;
+    messagesEl.appendChild(div);
+    scrollBottom();
+  }
+
+  function buildContent(data, intent) {
+    if (data.error) return `<span class="error-msg">⚠️ ${escHtml(data.error)}</span>`;
+
+    switch (intent) {
+      case 'get_weather': return buildWeather(data);
+      case 'suggest_destinations': return buildDestinations(data);
+      case 'build_itinerary': return buildItinerary(data);
+      case 'recommend_transport': return buildTransport(data);
+      case 'recommend_accommodation': return buildAccommodation(data);
+      case 'local_guide': return buildGuide(data);
+      case 'full_plan': return buildFullPlan(data);
+      default: return `<p>${escHtml(data.answer || JSON.stringify(data, null, 2))}</p>`;
+    }
+  }
+
+  function buildWeather(data) {
+    const s = data.weather_summary || '';
+    return `<div class="card"><div class="card-title"><span class="icon">🌤</span>Weather Forecast</div><div class="weather-block">${escHtml(s)}</div></div>`;
+  }
+
+  function buildDestinations(data) {
+    const dests = data.destinations || [];
+    if (!dests.length) return '<p>No destinations returned.</p>';
+    let html = `<div class="card"><div class="card-title"><span class="icon">🌍</span>Recommended Destinations</div><div class="dest-grid">`;
+    dests.forEach(d => {
+      html += `<div class="dest-card">
+        <h4>${escHtml(d.city || '')}</h4>
+        <div class="country">${escHtml(d.country || '')}</div>
+        <div class="cost">~$${d.estimated_cost_usd || 'N/A'}</div>
+        <div class="why">${escHtml(d.why || '')}</div>
+        ${(d.highlights||[]).map(h => `<span class="tag">${escHtml(h)}</span>`).join('')}
+      </div>`;
+    });
+    html += '</div></div>';
+    return html;
+  }
+
+  function buildItinerary(data) {
+    const days = data.itinerary || [];
+    let html = `<div class="card">
+      <div class="card-title"><span class="icon">📅</span>Day-by-Day Itinerary — ${escHtml(data.destination || '')}</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px">
+        ${data.duration_days || ''} days · ${escHtml(data.budget_level || '')} · Est. $${data.total_estimated_cost_usd || 'N/A'}
+      </p>`;
+    days.slice(0,5).forEach(day => {
+      html += `<div class="day-card">
+        <h4>Day ${day.day} — ${escHtml(day.theme || '')}</h4>`;
+      ['morning','afternoon','evening'].forEach(p => {
+        const slot = day[p];
+        if (slot) html += `<div class="day-slot"><strong>${cap(p)}:</strong> ${escHtml(slot.activity||'')} — ${escHtml(slot.description||'')} <span style="color:var(--green)">$${slot.cost_usd||0}</span></div>`;
+      });
+      if (day.transport_tip) html += `<div class="day-slot" style="margin-top:6px"><strong>🚌 Transport:</strong> ${escHtml(day.transport_tip)}</div>`;
+      html += '</div>';
+    });
+    if (days.length > 5) html += `<p style="font-size:12px;color:var(--muted)">...and ${days.length - 5} more days in the full plan.</p>`;
+    html += '</div>';
+    return html;
+  }
+
+  function buildTransport(data) {
+    const opts = data.options || [];
+    let html = `<div class="card"><div class="card-title"><span class="icon">🚀</span>Transport Options — ${escHtml(data.origin||'')} → ${escHtml(data.destination||'')}</div>`;
+    opts.slice(0,4).forEach(o => {
+      html += `<div class="transport-card">
+        <h4>${escHtml(o.mode||'')} <span style="color:var(--green);font-size:13px">~$${o.estimated_cost_usd||'N/A'}</span> · ${escHtml(o.duration||'')}</h4>
+        <p style="font-size:13px;color:var(--muted);margin:4px 0">${(o.pros||[]).join(' · ')}</p>
+        <p style="font-size:12px;color:var(--accent)">${escHtml(o.booking_tips||'')}</p>
+      </div>`;
+    });
+    if (data.local_transport_tips) html += `<p style="font-size:13px;color:var(--muted);margin-top:8px">💡 ${escHtml(data.local_transport_tips)}</p>`;
+    html += '</div>';
+    return html;
+  }
+
+  function buildAccommodation(data) {
+    const opts = data.options || [];
+    let html = `<div class="card"><div class="card-title"><span class="icon">🏨</span>Accommodation — ${escHtml(data.destination||'')}</div>`;
+    opts.slice(0,4).forEach(o => {
+      html += `<div class="accom-card">
+        <h4>${escHtml(o.name||'')} <span style="color:var(--green);font-size:13px">~$${o.estimated_price_per_night_usd||'N/A'}/night</span></h4>
+        <p style="font-size:12px;color:var(--muted)">📍 ${escHtml(o.neighborhood||'')} · ⭐ ${escHtml(o.rating||'')}</p>
+        <p style="font-size:12px;margin-top:4px">${(o.amenities||[]).map(a=>`<span class="tag">${escHtml(a)}</span>`).join('')}</p>
+        <p style="font-size:12px;color:var(--accent);margin-top:6px">${escHtml(o.tips||'')}</p>
+      </div>`;
+    });
+    html += '</div>';
+    return html;
+  }
+
+  function buildGuide(data) {
+    const must = (data.must_see||[]).slice(0,3);
+    const eat  = (data.must_eat||[]).slice(0,3);
+    const gems = data.hidden_gems||[];
+    const etiq = data.cultural_etiquette||[];
+    let html = `<div class="card"><div class="card-title"><span class="icon">🗺</span>Local Guide — ${escHtml(data.destination||'')} </div>`;
+    if (must.length) {
+      html += `<p style="font-size:13px;font-weight:600;color:var(--yellow);margin-bottom:6px">Must See</p>`;
+      must.forEach(m => html += `<div class="day-slot"><strong>${escHtml(m.name||'')}</strong> — ${escHtml(m.description||'')} <span style="color:var(--green)">$${m.entry_fee_usd||0}</span><br/><span style="color:var(--accent);font-size:11px">💡 ${escHtml(m.insider_tip||'')}</span></div>`);
+    }
+    if (eat.length) {
+      html += `<p style="font-size:13px;font-weight:600;color:var(--yellow);margin:10px 0 6px">Must Eat</p>`;
+      eat.forEach(e => html += `<div class="day-slot"><strong>${escHtml(e.dish||'')}</strong> — ${escHtml(e.description||'')} (~$${e.avg_cost_usd||'N/A'})</div>`);
+    }
+    if (gems.length) html += `<p style="font-size:12px;color:var(--muted);margin-top:10px">🔮 <strong>Hidden Gems:</strong> ${gems.map(escHtml).join(' · ')}</p>`;
+    if (etiq.length) html += `<p style="font-size:12px;color:var(--muted);margin-top:6px">🙏 <strong>Etiquette:</strong> ${etiq.slice(0,2).map(escHtml).join(' · ')}</p>`;
+    if (data.best_time_to_visit) html += `<p style="font-size:12px;color:var(--accent);margin-top:6px">📅 <strong>Best time:</strong> ${escHtml(data.best_time_to_visit)}</p>`;
+    html += '</div>';
+    return html;
+  }
+
+  function buildFullPlan(data) {
+    let html = `<div class="card" style="border-color:var(--green)">
+      <div class="card-title"><span class="icon">🌐</span>Complete Travel Plan — ${escHtml(data.destination||'')} (${data.duration_days||''} days)</div>`;
+    if (data.weather?.summary) html += `<p style="white-space:pre-wrap;font-size:13px;color:var(--muted)">${escHtml(data.weather.summary)}</p><hr style="border-color:var(--border);margin:12px 0"/>`;
+    if (data.itinerary?.itinerary?.length) html += buildItinerary(data.itinerary);
+    if (data.transport?.options) html += buildTransport(data.transport);
+    if (data.accommodation?.options) html += buildAccommodation(data.accommodation);
+    if (data.local_guide?.must_see) html += buildGuide(data.local_guide);
+    html += '</div>';
+    return html;
+  }
+
+  function escHtml(str) {
+    return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+  function scrollBottom() { messagesEl.scrollTop = messagesEl.scrollHeight; }
+</script>
+</body>
+</html>
